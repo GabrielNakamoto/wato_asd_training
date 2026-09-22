@@ -3,7 +3,7 @@
 #include <nav_msgs/msg/map_meta_data.hpp>
 #include <std_msgs/msg/header.hpp>
 
-CostmapNode::CostmapNode() : Node("costmap"), costmap_(robot::CostmapCore(this->get_logger())) {
+CostmapNode::CostmapNode() : Node("costmap") {
   grid_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("/costmap", 10);
   lidar_sub_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
     "/lidar", 10, std::bind(&CostmapNode::processLidar, this, std::placeholders::_1));

@@ -10,19 +10,16 @@ class CostmapNode : public rclcpp::Node {
   public:
     CostmapNode();
 
+  private:
     void processLidar(const std::shared_ptr<sensor_msgs::msg::LaserScan> msg);
 
-  private:
     // cells per meter
     const static size_t grid_resolution = 10;
     // number of meters per side
     const static size_t grid_size = 10;
     // meter radius of heightened cost/reaction
     const static size_t inflation_radius = 1;
-
     const static size_t inflation_max_cost = 50;
-
-    robot::CostmapCore costmap_;
 
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr lidar_sub_;
     rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr grid_pub_;

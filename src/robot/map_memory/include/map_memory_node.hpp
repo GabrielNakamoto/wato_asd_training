@@ -10,11 +10,11 @@ class MapMemoryNode : public rclcpp::Node {
   public:
     MapMemoryNode();
 
+  private:
     void processCostmap(const std::shared_ptr<nav_msgs::msg::OccupancyGrid> costmap);
     void processOdometry(const std::shared_ptr<nav_msgs::msg::Odometry> odometry);
     void transmitMap();
 
-  private:
     static constexpr double distance_threshold = 1.5f;
     static constexpr double map_resolution = 0.1;
     static const size_t map_size = 35; // meters
