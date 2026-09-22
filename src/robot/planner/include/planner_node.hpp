@@ -16,38 +16,35 @@ public:
 private:
 
 	// 2D grid index
-	struct CellIndex
-	{
-		int x;
-		int y;
+	struct CellIndex {
+		int x, y;
 
 		CellIndex(int xx, int yy) : x(xx), y(yy) {}
 		CellIndex() : x(0), y(0) {}
 
-		bool operator==(const CellIndex &other) const
-		{
+		bool operator==(const CellIndex &other) const {
 			return (x == other.x && y == other.y);
 		}
 
-		bool operator!=(const CellIndex &other) const
-		{
+		bool operator!=(const CellIndex &other) const {
 			return (x != other.x || y != other.y);
 		}
+
+    double dist(const CellIndex &other) const {
+      return std::hypot((double)other.x - x, (double)other.y - y);
+    }
 	};
 
 	// Hash function for CellIndex so it can be used in std::unordered_map
-	struct CellIndexHash
-	{
-		std::size_t operator()(const CellIndex &idx) const
-		{
+	struct CellIndexHash {
+		std::size_t operator()(const CellIndex &idx) const {
 			// A simple hash combining x and y
 			return std::hash<int>()(idx.x) ^ (std::hash<int>()(idx.y) << 1);
 		}
 	};
 
 	// Structure representing a node in the A* open set
-	struct AStarNode
-	{
+	struct AStarNode {
 		CellIndex index;
 		double f_score;  // f = g + h
 
@@ -55,19 +52,18 @@ private:
 	};
 
 	// Comparator for the priority queue (min-heap by f_score)
-	struct CompareF
-	{
-		bool operator()(const AStarNode &a, const AStarNode &b)
-		{
+	struct CompareF {
+		bool operator()(const AStarNode &a, const AStarNode &b) {
 			// We want the node with the smallest f_score on top
 			return a.f_score > b.f_score;
 		}
 	};
 
 	void computePath();
-	CellIndex worldToCell(double wx, double wy);
+	CellIndex worldToCell(double wx, double wy) const;
 
 	static constexpr double completed_threshold = 0.5f;
+	static constexpr double a_star_proximity = 0.5f;
 
 	enum class State { NO_GOAL, PLANNING };
 	State state_;
