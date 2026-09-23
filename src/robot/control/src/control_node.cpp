@@ -13,22 +13,38 @@ ControlNode::ControlNode(): Node("control") {
 std::optional<geometry_msgs::msg::PoseStamped> ControlNode::interpolatePath() {
   const auto &robot_pos = robot_odom_.pose.pose.position;
   const auto &goal = current_path_.poses.back().pose.position;
+
   if (std::hypot(goal.x - robot_pos.x, goal.y - robot_pos.y) < ControlNode::goal_tolerance) {
-    // stop command
     RCLCPP_INFO(this->get_logger(), "[PURE-PURSUIT] robot within target threshold. stopping");
+    // stop command
     cmd_vel_pub_->publish(geometry_msgs::msg::Twist());
     return std::nullopt;
   }
 
-  auto last_pose = current_path_.poses[0];
-  for (const auto &pose : current_path_.poses) {
-    double dist = std::hypot(
-      pose.pose.position.x - robot_odom_.pose.pose.position.x,
-      pose.pose.position.y - robot_odom_.pose.pose.position.y
+  double prox = std::numeric_limits<double>::infinity();
+  int start_idx = 0;
+  for (int i=0; i<(int)current_path_.poses.size(); ++i) {
+    double d = std::hypot(
+      current_path_.poses[i].pose.position.x - robot_odom_.pose.pose.position.x,
+      current_path_.poses[i].pose.position.y - robot_odom_.pose.pose.position.y
     );
 
-    if (dist > ControlNode::lookahead_distance) return last_pose;
-    last_pose = pose;
+    if (d < prox) {
+      prox = d;
+      start_idx = i;
+    }
+  }
+
+  auto last_pose = current_path_.poses[0];
+  for (int i=start_idx; i<(int)current_path_.poses.size(); ++i) {
+    auto pose = &current_path_.poses[i];
+    double d = std::hypot(
+      pose->pose.position.x - robot_odom_.pose.pose.position.x,
+      pose->pose.position.y - robot_odom_.pose.pose.position.y
+    );
+
+    if (d > ControlNode::lookahead_distance ) return last_pose;
+    last_pose = *pose;
     last_pose.header.stamp = this->get_clock()->now();
   }
 
@@ -37,7 +53,10 @@ std::optional<geometry_msgs::msg::PoseStamped> ControlNode::interpolatePath() {
 }
 
 void ControlNode::controlLoop() {
-  if (current_path_.poses.empty()) return;
+  if (current_path_.poses.empty()) {
+    cmd_vel_pub_->publish(geometry_msgs::msg::Twist());
+    return;
+  }
 
   auto lookahead = interpolatePath();
   if (! lookahead.has_value()) return;
@@ -53,7 +72,6 @@ void ControlNode::controlLoop() {
   const double dx = final_point.x - robot_pose.position.x;
   const double dy = final_point.y - robot_pose.position.y;
   const double local_y = -std::sin(robot_yaw) * dx + std::cos(robot_yaw) * dy;
-  const double rel_x = final_point.x - robot_pose.position.x;
   const double curvature = 2.0* (local_y / (dx*dx + dy*dy));
   const double omega = curvature * ControlNode::linear_speed;
 
@@ -61,6 +79,16 @@ void ControlNode::controlLoop() {
   auto vel_cmd = geometry_msgs::msg::Twist();
   vel_cmd.angular.z = omega;
   vel_cmd.linear.x = ControlNode::linear_speed;
+
+  /*
+  // if more than 60 degrees off stop and rotate
+  const double local_x = std::cos(robot_yaw) * dx + std::sin(robot_yaw) * dy;
+  const double heading_error = std::atan2(local_y, local_x);
+  if (std::abs(heading_error) > M_PI / 3) {
+    vel_cmd.linear.x = 0.0;
+    vel_cmd.angular.z = std::copysign(1.0, heading_error);
+  }
+  */
 
   // publish command
   cmd_vel_pub_->publish(vel_cmd);

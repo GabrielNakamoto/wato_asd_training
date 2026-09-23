@@ -65,7 +65,7 @@ void MapMemoryNode::transmitMap() {
       int map_y = std::floor((world_y - gi.origin.position.y) / gi.resolution);
       if (map_x < 0 || map_y < 0 || map_x >= (int)gi.width || map_y >= (int)gi.height) continue;
 
-      global_map_.data[map_y * gi.width + map_x] = cost;
+      global_map_.data[map_y*gi.width+map_x] = std::max(cost, global_map_.data[map_y*gi.width+map_x]);
     }
   }
 

@@ -67,7 +67,7 @@ void PlannerNode::computePath() {
   g_score[current_cell] = 0.0f;
 
   // A* implementation
-  const int dcell = static_cast<int>(PlannerNode::a_star_proximity / current_map_.info.resolution);
+  const int dcell = 1;
   const auto &map_info = current_map_.info;
   const double cell_threshold = PlannerNode::completed_threshold / map_info.resolution;
 
@@ -88,11 +88,11 @@ void PlannerNode::computePath() {
     // find neighbours
     for (int i=-dcell; i<=dcell; ++i) {
       for (int j=-dcell; j<=dcell; ++j) {
-        if (i == 0 || j == 0) continue;
+        if (i == 0 && j == 0) continue;
 
         int nx = cur.index.x + j, ny = cur.index.y + i;
         if (nx < 0 || ny < 0 || nx >= (int)map_info.width || ny >= (int)map_info.height) continue;
-        if (current_map_.data[ny*map_info.width+nx] > 0) continue;
+        if (current_map_.data[ny*map_info.width+nx] > 5) continue;
 
         const CellIndex neighbour = CellIndex(nx, ny);
 

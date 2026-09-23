@@ -63,7 +63,7 @@ class PlannerNode : public rclcpp::Node {
     void computePath();
     CellIndex worldToCell(double wx, double wy) const;
 
-    static constexpr double completed_threshold = 0.5f;
+    static constexpr double completed_threshold = 0.3f;
     static constexpr double a_star_proximity = 0.5f;
 
     enum class State { NO_GOAL, PLANNING };
