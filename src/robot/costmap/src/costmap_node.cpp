@@ -9,7 +9,7 @@ CostmapNode::CostmapNode() : Node("costmap") {
     "/lidar", 10, std::bind(&CostmapNode::processLidar, this, std::placeholders::_1));
 }
 
-void CostmapNode::processLidar(const std::shared_ptr<sensor_msgs::msg::LaserScan> scan) {
+void CostmapNode::processLidar(const sensor_msgs::msg::LaserScan::SharedPtr scan) {
   const int n_cells = CostmapNode::grid_size * CostmapNode::grid_resolution;
   std::vector<int8_t> occupancy_grid(n_cells*n_cells, 0);
   std::vector<std::size_t> detected;

@@ -11,8 +11,8 @@ class MapMemoryNode : public rclcpp::Node {
     MapMemoryNode();
 
   private:
-    void processCostmap(const std::shared_ptr<nav_msgs::msg::OccupancyGrid> costmap);
-    void processOdometry(const std::shared_ptr<nav_msgs::msg::Odometry> odometry);
+    void processCostmap(const nav_msgs::msg::OccupancyGrid::SharedPtr costmap);
+    void processOdometry(const nav_msgs::msg::Odometry::SharedPtr odometry);
     void transmitMap();
 
     static constexpr double distance_threshold = 1.5f;

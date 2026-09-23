@@ -5,39 +5,41 @@
 #include <chrono>
 
 PlannerNode::PlannerNode() : Node("planner"), state_(State::NO_GOAL) {
-  auto odomCallback = [&](const std::shared_ptr<nav_msgs::msg::Odometry> msg) {
-    robot_pose_ = msg->pose.pose;
-  };
+  path_pub_ = this->create_publisher<nav_msgs::msg::Path>("/path", 10);
+  timer_ = this->create_wall_timer(std::chrono::milliseconds(500), std::bind(&PlannerNode::timerCallback, this));
 
-  auto goalCallback = [&](const std::shared_ptr<geometry_msgs::msg::PointStamped> msg) {
-    goal_ = *msg;
-    state_ = State::PLANNING;
-    computePath();
-  };
+  odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
+    "/odom/filtered", 10, [this](const nav_msgs::msg::Odometry::SharedPtr msg){ robot_pose_ = msg->pose.pose; });
 
-  auto mapCallback = [&](const std::shared_ptr<nav_msgs::msg::OccupancyGrid> msg) {
-    current_map_ = *msg;
-    computePath();
-  };
-
-  auto timerCallback = [&] {
-    if (state_ != State::PLANNING) return;
-    double delta = std::hypot(goal_.point.x - robot_pose_.position.x, goal_.point.y - robot_pose_.position.y);
-
-    if (delta < PlannerNode::completed_threshold) {
-      RCLCPP_INFO(this->get_logger(), "GOAL reached!");
-      state_ = State::NO_GOAL;
-    } else {
-      RCLCPP_INFO(this->get_logger(), "replanning...");
+  goal_sub_ = this->create_subscription<geometry_msgs::msg::PointStamped>(
+    "/goal_point", 10,
+    [this](const geometry_msgs::msg::PointStamped::SharedPtr msg) {
+      goal_ = *msg;
+      state_ = State::PLANNING;
       computePath();
     }
-  };
+  );
 
-  path_pub_ = this->create_publisher<nav_msgs::msg::Path>("/path", 10);
-  goal_sub_ = this->create_subscription<geometry_msgs::msg::PointStamped>("/goal_point", 10, goalCallback);
-  odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>("/odom/filtered", 10, odomCallback);
-  map_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>("/map", 10, mapCallback);
-  timer_ = this->create_wall_timer(std::chrono::milliseconds(500), timerCallback);
+  map_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
+    "/map", 10,
+    [this](const nav_msgs::msg::OccupancyGrid::SharedPtr msg){
+      current_map_ = *msg;
+      computePath();
+    }
+  );
+}
+
+void PlannerNode::timerCallback() {
+  if (state_ != State::PLANNING) return;
+  double delta = std::hypot(goal_.point.x - robot_pose_.position.x, goal_.point.y - robot_pose_.position.y);
+
+  if (delta < PlannerNode::completed_threshold) {
+    RCLCPP_INFO(this->get_logger(), "GOAL reached!");
+    state_ = State::NO_GOAL;
+  } else {
+    RCLCPP_INFO(this->get_logger(), "replanning...");
+    computePath();
+}
 }
 
 PlannerNode::CellIndex PlannerNode::worldToCell(double wx, double wy) const {
@@ -87,11 +89,10 @@ void PlannerNode::computePath() {
     for (int i=-dcell; i<=dcell; ++i) {
       for (int j=-dcell; j<=dcell; ++j) {
         if (i == 0 || j == 0) continue;
+
         int nx = cur.index.x + j, ny = cur.index.y + i;
         if (nx < 0 || ny < 0 || nx >= (int)map_info.width || ny >= (int)map_info.height) continue;
-
-        bool obstacle = current_map_.data[ny*map_info.width+nx] > 50;
-        if (obstacle) continue;
+        if (current_map_.data[ny*map_info.width+nx] > 0) continue;
 
         const CellIndex neighbour = CellIndex(nx, ny);
 
@@ -126,7 +127,6 @@ void PlannerNode::computePath() {
   CellIndex latest = best.value();
   auto now = this->get_clock()->now();
   while (latest != current_cell) {
-    RCLCPP_INFO(this->get_logger(), "backtracking node (%d, %d)", latest.x, latest.y);
     // convert to global coordinate frame
     auto pose = geometry_msgs::msg::PoseStamped();
     pose.header.stamp = now;

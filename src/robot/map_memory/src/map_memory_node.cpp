@@ -20,12 +20,12 @@ MapMemoryNode::MapMemoryNode() : Node("map_memory") {
   global_map_.data.assign(std::pow(global_map_.info.width, 2), 0);
 }
 
-void MapMemoryNode::processCostmap(const std::shared_ptr<nav_msgs::msg::OccupancyGrid> msg) {
+void MapMemoryNode::processCostmap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
   latest_costmap_ = *msg;
   costmap_updated_ = true;
 }
 
-void MapMemoryNode::processOdometry(const std::shared_ptr<nav_msgs::msg::Odometry> msg) {
+void MapMemoryNode::processOdometry(const nav_msgs::msg::Odometry::SharedPtr msg) {
   const auto &p = msg->pose.pose.position;
   const auto &q = msg->pose.pose.orientation;
 
