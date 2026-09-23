@@ -18,7 +18,7 @@ class CostmapNode : public rclcpp::Node {
     // number of meters per side
     const static size_t grid_size = 10;
     // meter radius of heightened cost/reaction
-    const static size_t inflation_radius = 1.75f;
+    const static size_t inflation_radius = 2.25f;
     const static size_t inflation_max_cost = 50;
 
     rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr lidar_sub_;

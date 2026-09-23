@@ -25,9 +25,9 @@ class ControlNode : public rclcpp::Node {
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub_;
     rclcpp::TimerBase::SharedPtr timer_;
 
-    static constexpr double lookahead_distance = 1.0f;
-    static constexpr double goal_tolerance = 0.1;
-    static constexpr double linear_speed = 0.5;
+    static constexpr double lookahead_distance = 1.25f;
+    static constexpr double goal_tolerance = 0.25;
+    static constexpr double linear_speed = 0.8f;
 };
 
 #endif
